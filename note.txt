@@ -1,0 +1,56 @@
+Kernel:
+Bootloader
+Kernel entry point to C
+Basic screen output
+Interrupts
+Exceptions
+Programmable Interval Timer
+Keyboard Driver
+Memory management
+
+gcc -m32 -ffreestanding -fno-pie -fno-stack-protector -mno-red-zone -nostdlib -c kernel.c -o kernel.o
+C compilation flags:
+-ffreestanding -> 	     tells gcc there's no standard library, no main() guarantees, no hosted environment. Without this, gcc assumes things like malloc/printf exist and may "optimize" code into calls to them.
+-fno-pie ->		     stops gcc emitting position-independent code (relies on a dynamic loader you don't have).
+-fno-stack-protector ->     disables stack-canary checks that call __stack_chk_fail, a libc function you don't have.
+-mno-red-zone ->	     only matters in 64-bit mode, but include it if you ever go x86_64; the red zone gets clobbered by interrupts on bare metal.
+-nostdlib (at link time) -> don't link against libc/crt0.
+-m32 ->                           since your boot.asm is bits 32, keep the kernel 32-bit too, otherwise you'll get calling-convention/pointer-size mismatches between the two object files.
+
+
+VGA formula:
+Index = (cursor_y * VGA_width) + cursor_x
+
+
+final compile:
+
+make clean
+make
+
+test run in qemu
+
+qemu-system-i386 -cdrom rootos.iso -boot d -m 128M
+
+find usb lsbik or lsblk -f
+
+copy to usb
+
+sudo mkdir -p /mnt/usb
+sudo mount /dev/SDX /mnt/usb
+sudo cp myos.bin /mnt/usb/boot/myos.bin
+sync
+sudo umount /mnt/usb
+
+Linker:
+.text — code
+.rodata — constants/string literals
+.data — initialized globals
+.bss — zeroed globals (needs *(COMMON) too, to catch C's tentative/common symbol definitions)
+
+______________________________________________________________________
+ _   _   _   _   _   _     _____   _   _____   ____      _____   ____
+| | / | | | | | | | | |   |  ___| | | |  _  | |  _  |   |  _  | / ___|
+| |/  | | | | | | | | |   | |_    | | | | | | | |_| |   | | | | | |___
+|  /| | | |_| | | | | |   |  _|   | | | |_| | |  ___|   | |_| | |___  |
+|_/ |_|  |___|  |_| |_|   |_|     |_| |_____| |_|       |_____| |____/
+_______________________________________________________________________
